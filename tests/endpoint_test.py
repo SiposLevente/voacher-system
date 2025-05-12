@@ -1,25 +1,10 @@
-from datetime import time
-import os
 import pytest
 from fastapi.testclient import TestClient
-from app.api_endpoints import appAPI
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
-from app.ocr_definitions import BaseClass
+from app.api_endpoints import SessionLocal, appAPI
 from app.ocr_definitions import Voucher
 
 # Initialize the test client
 client = TestClient(appAPI)
-
-# Database setup for testing
-# You can use a separate test database
-DATABASE_URL = "sqlite:///./test_database.db"
-
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Create the tables for the test database
-BaseClass.metadata.create_all(bind=engine)
 
 
 @pytest.fixture(scope="function")
@@ -40,10 +25,6 @@ def db_session():
 
     # Close the session
     db.close()
-
-    # Ensure the connection is closed before removing the database file
-    if os.path.exists('./test_database.db'):
-        os.remove('./test_database.db')
 
 
 # Test creating a voucher
