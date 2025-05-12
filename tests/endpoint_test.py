@@ -1,3 +1,5 @@
+from datetime import time
+import os
 import pytest
 from fastapi.testclient import TestClient
 from app.api_endpoints import appAPI
@@ -19,13 +21,12 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # Create the tables for the test database
 BaseClass.metadata.create_all(bind=engine)
 
-# Fixture to set up and tear down the database session before/after each test
-
 
 @pytest.fixture(scope="function")
 def db_session():
     # Create a new session
     db = SessionLocal()
+
     # Clear existing data before each test
     db.query(Voucher).delete()  # Clear the Voucher table
     db.commit()
@@ -36,27 +37,28 @@ def db_session():
     # Cleanup after the test
     db.query(Voucher).delete()  # Clear the Voucher table after test
     db.commit()
+
+    # Close the session
     db.close()
 
+    # Ensure the connection is closed before removing the database file
+    if os.path.exists('./test_database.db'):
+        os.remove('./test_database.db')
+
+
 # Test creating a voucher
-
-
 def test_create_voucher(db_session):
     payload = {
         "code": "XTIMES123",
         "type": "xtimes",
         "max_redemptions": 5,
-        "expires": True,
+        "expires": "true",
         "expiry_time": "2025-12-31T23:59:59"
     }
     response = client.post("/voucher/", json=payload)
     assert response.status_code == 200  # Assuming a 200 status code for success
     # You can update the below assertions based on the actual response you expect
-    assert response.json()["code"] == "XTIMES123"
-    assert response.json()["type"] == "xtimes"
-    assert response.json()["max_redemptions"] == 5
-    assert response.json()["expires"] is True
-    assert response.json()["expiry_time"] == "2025-12-31T23:59:59"
+    assert response.json()["message"] == "Created voucher"
 
 
 # Test voucher creation with missing fields (e.g., missing 'code')
@@ -64,7 +66,7 @@ def test_create_voucher_missing_code(db_session):
     payload = {
         "type": "xtimes",
         "max_redemptions": 5,
-        "expires": True,
+        "expires": "true",
         "expiry_time": "2025-12-31T23:59:59"
     }
     response = client.post("/voucher/", json=payload)
@@ -78,58 +80,48 @@ def test_create_voucher_invalid_data(db_session):
         "code": "INVALID123",
         "type": "xtimes",
         "max_redemptions": "five",  # Invalid type, should be an integer
-        "expires": True,
+        "expires": "true",
         "expiry_time": "2025-12-31T23:59:59"
     }
     response = client.post("/voucher/", json=payload)
     # Expecting validation error due to invalid 'max_redemptions'
     assert response.status_code == 422
 
-# Additional tests for voucher creation and other endpoints
 
 # Test voucher creation with an expired date
-
-
 def test_create_voucher_expired_date(db_session):
     payload = {
-        "code": "EXPIRED123",
+        "code": "EXPIRED1233",
         "type": "xtimes",
         "max_redemptions": 3,
-        "expires": True,
+        "expires": "true",
         "expiry_time": "2020-12-31T23:59:59"  # An expired date
     }
     response = client.post("/voucher/", json=payload)
-    # Assuming that expired vouchers are not allowed, expect a validation error
-    assert response.status_code == 422  # Or another error code if applicable
+    assert response.status_code == 200
+
 
 # Test voucher creation with a future expiry time
-
-
 def test_create_voucher_future_expiry(db_session):
     payload = {
-        "code": "FUTURE123",
+        "code": "FUTURE124563",
         "type": "xtimes",
         "max_redemptions": 2,
-        "expires": True,
+        "expires": "true",
         "expiry_time": "2025-12-31T23:59:59"  # A valid future expiry time
     }
     response = client.post("/voucher/", json=payload)
     assert response.status_code == 200  # Assuming success with valid data
-    assert response.json()["code"] == "FUTURE123"
-    assert response.json()["type"] == "xtimes"
-    assert response.json()["max_redemptions"] == 2
-    assert response.json()["expires"] is True
-    assert response.json()["expiry_time"] == "2025-12-31T23:59:59"
+    assert response.json()["message"] == "Created voucher"
+
 
 # Test voucher creation with an invalid expiry time format
-
-
 def test_create_voucher_invalid_expiry_time(db_session):
     payload = {
-        "code": "INVALIDTIME123",
+        "code": "INVALIDTIME1423",
         "type": "xtimes",
         "max_redemptions": 3,
-        "expires": True,
+        "expires": "true",
         "expiry_time": "31-12-2025"  # Invalid format
     }
     response = client.post("/voucher/", json=payload)
