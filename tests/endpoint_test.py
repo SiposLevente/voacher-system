@@ -111,10 +111,11 @@ def test_delete_existing_voucher(db_session):
     # Delete the voucher
     response = client.delete(f"/voucher/?code={payload['code']}")
     assert response.status_code == 200
-    # assert response.json()["message"] == "Deleted voucher"
-    # # Verify the voucher no longer exists
-    # response = client.get(f"/voucher/?code={payload['code']}")
-    # assert response.status_code == 404
+    assert response.json()[
+        "message"] == f"Voucher with code '{payload['code']}' has been successfully deleted"
+    # Verify the voucher no longer exists
+    response = client.get(f"/voucher/?code={payload['code']}")
+    assert response.status_code == 404
 
 
 def test_redeem_voucher_success(db_session):
@@ -153,4 +154,5 @@ def test_redeem_voucher_exceed_limit(db_session):
     # Attempt to redeem the voucher again
     response = client.post("/redeem/", json=redeem_payload)
     assert response.status_code == 400
-    assert "max_redemptions" in response.json()["detail"]
+    assert "Voucher has been redeemed the maximum number of times" in response.json()[
+        "detail"]

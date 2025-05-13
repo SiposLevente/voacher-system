@@ -77,19 +77,15 @@ def get_voucher_by_code(code: str = Query(..., description="The code of the vouc
 
 # Admin: Delete a specific voucher by code using VoucherGet
 @appAPI.delete("/voucher/")
-def delete_voucher(voucher: VoucherGet, db: Session = Depends(get_db)):
-    # Query the database for the voucher by its code
-    db_voucher = db.query(Voucher).filter(Voucher.code == voucher.code).first()
-
-    # If no voucher is found, raise a 404 error
-    if db_voucher is None:
+def delete_voucher(code: str = Query(...), db: Session = Depends(get_db)):
+    db_voucher = db.query(Voucher).filter(Voucher.code == code).first()
+    if not db_voucher:
         raise HTTPException(status_code=404, detail="Voucher not found")
 
-    # Delete the voucher
     db.delete(db_voucher)
     db.commit()
 
-    return {"message": f"Voucher with code '{voucher.code}' has been successfully deleted"}
+    return {"message": f"Voucher with code '{code}' has been successfully deleted"}
 
 
 # Client: Redeem a voucher
