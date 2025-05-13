@@ -1,7 +1,11 @@
+import os
+os.environ["DATABASE_URL"] = "sqlite:///./test_database.db"  # noqa
+
 import pytest
-from fastapi.testclient import TestClient
-from app.api_endpoints import SessionLocal, appAPI
 from app.ocr_definitions import Voucher
+from fastapi.testclient import TestClient
+from app.api_endpoints import appAPI, SessionLocal, engine
+
 
 # Initialize the test client
 client = TestClient(appAPI)
@@ -20,6 +24,19 @@ def db_session():
     db.commit()
 
     db.close()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_db():
+    yield
+
+    try:
+        engine.dispose()
+
+        if os.path.exists("./test_database.db"):
+            os.remove("./test_database.db")
+    except Exception as e:
+        print(f"Error deleting the database: {e}")
 
 
 def test_create_voucher(db_session):

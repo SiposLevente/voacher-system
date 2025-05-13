@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from fastapi import Depends, FastAPI, HTTPException, Query
 from sqlalchemy import create_engine
@@ -6,7 +7,8 @@ from app.models import VoucherCreate, VoucherGet, VoucherRedemption
 from app.ocr_definitions import VOUCHER_TYPES, Voucher, BaseClass
 from sqlalchemy.exc import IntegrityError
 
-DATABASE_URL = "sqlite:///./_database.db"
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", "sqlite:///./_database.db")
 
 appAPI = FastAPI()
 
