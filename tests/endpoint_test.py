@@ -1,8 +1,9 @@
+from datetime import datetime
 import os
 os.environ["DATABASE_URL"] = "sqlite:///./test_database.db"  # noqa
 
 import pytest
-from app.ocr_definitions import VOUCHER_TYPES, Voucher
+from app.ocr_definitions import Voucher
 from fastapi.testclient import TestClient
 from app.api_endpoints import appAPI, SessionLocal, engine
 
@@ -210,3 +211,82 @@ def test_redeem_expired_voucher(db_session):
     response = client.post("/redeem/", json=redeem_payload)
     assert response.status_code == 400
     assert "Voucher has expired" in response.json()["detail"]
+
+
+def test_get_all_vouchers(db_session):
+    # Create a few vouchers first
+    payload1 = {
+        "code": "SINGLE123",
+        "type": "single",
+        "uses_left": 1,
+        "expires": True,
+        "expiry_time": "2025-12-31T23:59:59"
+    }
+    payload2 = {
+        "code": "MULTIPLE123",
+        "type": "multiple",
+        "uses_left": 5,
+        "expires": True,
+        "expiry_time": "2025-12-31T23:59:59"
+    }
+    client.post("/voucher/", json=payload1)
+    client.post("/voucher/", json=payload2)
+
+    # Now test retrieving all vouchers
+    response = client.get("/vouchers/")
+    assert response.status_code == 200
+    assert "vouchers" in response.json()
+    assert len(response.json()["vouchers"]) > 0
+
+
+def test_create_voucher_invalid_type(db_session):
+    payload = {
+        "code": "INVALIDTYPE123",
+        "type": "invalid",  # Invalid type
+        "uses_left": 5,
+        "expires": True,
+        "expiry_time": "2025-12-31T23:59:59"
+    }
+    response = client.post("/voucher/", json=payload)
+    assert response.status_code == 422
+
+
+def test_redeem_expired_exact_date(db_session):
+    payload = {
+        "code": "EXACTEXPIRY123",
+        "type": "xtimes",
+        "uses_left": 5,
+        "expires": True,
+        "expiry_time": datetime.now().isoformat()  # Set expiry to the current time
+    }
+    response = client.post("/voucher/", json=payload)
+    assert response.status_code == 200
+    redeem_payload = {"code": payload["code"]}
+    response = client.post("/redeem/", json=redeem_payload)
+    assert response.status_code == 400
+    assert "Voucher has expired" in response.json()["detail"]
+
+
+def test_create_xtimes_voucher_invalid_uses_left(db_session):
+    payload = {
+        "code": "INVALIDXTIMES123",
+        "type": "xtimes",
+        "uses_left": 1,  # Invalid for xtimes
+        "expires": True,
+        "expiry_time": "2025-12-31T23:59:59"
+    }
+    response = client.post("/voucher/", json=payload)
+    assert response.status_code == 422
+
+
+def test_redeem_non_existent_voucher(db_session):
+    redeem_payload = {"code": "NONEXISTENT123"}
+    response = client.post("/redeem/", json=redeem_payload)
+    assert response.status_code == 404
+    assert "Voucher not found" in response.json()["detail"]
+
+
+def test_delete_non_existent_voucher(db_session):
+    response = client.delete("/voucher/?code=NONEXISTENT123")
+    assert response.status_code == 404
+    assert "Voucher not found" in response.json()["detail"]

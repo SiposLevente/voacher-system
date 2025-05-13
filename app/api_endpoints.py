@@ -3,8 +3,8 @@ from datetime import datetime
 from fastapi import Depends, FastAPI, HTTPException, Query
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
-from app.models import VoucherCreate, VoucherGet, VoucherRedemption
-from app.ocr_definitions import VOUCHER_TYPES, Voucher, BaseClass
+from app.models import VoucherCreate,  VoucherRedemption
+from app.ocr_definitions import Voucher, BaseClass
 from sqlalchemy.exc import IntegrityError
 
 DATABASE_URL = os.getenv(
