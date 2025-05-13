@@ -212,3 +212,58 @@ def test_redeem_multiple_times(db_session):
 
     response = client.post("/redeem/", json=redeem_payload)
     assert response.status_code == 200
+
+
+# Test: Invalid Expiry Date
+def test_create_voucher_invalid_expiry_date(db_session):
+    payload = {
+        "code": "INVALID_EXPIRY123",
+        "type": "xtimes",
+        "uses_left": 5,
+        "expires": True,
+        "expiry_time": "invalid-date-format"
+    }
+    response = client.post("/voucher/", json=payload)
+    assert response.status_code == 422
+    assert "Input should be a valid datetime or date, invalid character in year" in response.json()[
+        "detail"][0]["msg"]
+
+
+# Test: Voucher Expiry - Cannot Redeem Expired Voucher
+def test_redeem_expired_voucher(db_session):
+    expired_payload = {
+        "code": "EXPIRED123",
+        "type": "xtimes",
+        "uses_left": 5,
+        "expires": True,
+        "expiry_time": "2023-01-01T00:00:00"  # Expired date
+    }
+    # Create the expired voucher
+    response = client.post("/voucher/", json=expired_payload)
+    assert response.status_code == 200
+    # Try to redeem the expired voucher
+    redeem_payload = {"code": expired_payload["code"]}
+    response = client.post("/redeem/", json=redeem_payload)
+    assert response.status_code == 400
+    assert "Voucher has expired" in response.json()["detail"]
+
+
+# Test: Multiple Voucher Types (single, multiple, xtimes)
+def test_create_multiple_voucher_types(db_session):
+    for voucher_type in VOUCHER_TYPES.keys():
+        payload = {
+            "code": f"{voucher_type.upper()}123",
+            "type": voucher_type,
+            "uses_left": 5,
+            "expires": True,
+            "expiry_time": "2025-12-31T23:59:59"
+        }
+        response = client.post("/voucher/", json=payload)
+        assert response.status_code == 200
+        assert response.json()["message"] == "Created voucher"
+
+        # Redeem the voucher
+        redeem_payload = {"code": payload["code"]}
+        response = client.post("/redeem/", json=redeem_payload)
+        assert response.status_code == 200
+        assert response.json()["message"] == "Voucher redeemed successfully"
