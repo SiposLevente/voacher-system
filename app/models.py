@@ -6,7 +6,7 @@ from pydantic import BaseModel
 class VoucherCreate(BaseModel):
     code: str
     type: str
-    max_redemptions: int
+    uses_left: int
     expires: bool
     expiry_time: Optional[datetime]
 

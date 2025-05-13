@@ -2,7 +2,7 @@ import os
 os.environ["DATABASE_URL"] = "sqlite:///./test_database.db"  # noqa
 
 import pytest
-from app.ocr_definitions import Voucher
+from app.ocr_definitions import VOUCHER_TYPES, Voucher
 from fastapi.testclient import TestClient
 from app.api_endpoints import appAPI, SessionLocal, engine
 
@@ -40,22 +40,35 @@ def cleanup_db():
 
 
 def test_create_voucher(db_session):
+    for type in VOUCHER_TYPES.keys():
+        payload = {
+            "code": f"{type.upper()}123",
+            "type": type,
+            "uses_left": 5,
+            "expires": "true",
+            "expiry_time": "2025-12-31T23:59:59"
+        }
+        response = client.post("/voucher/", json=payload)
+        assert response.status_code == 200
+        assert response.json()["message"] == "Created voucher"
+
+
+def test_create_voucher_missing_code(db_session):
     payload = {
-        "code": "XTIMES123",
+        "code": "INVALID123",
         "type": "xtimes",
-        "max_redemptions": 5,
+        "uses_left": 5,
         "expires": "true",
         "expiry_time": "2025-12-31T23:59:59"
     }
     response = client.post("/voucher/", json=payload)
-    assert response.status_code == 200
-    assert response.json()["message"] == "Created voucher"
+    assert response.status_code == 422
 
 
 def test_create_voucher_missing_code(db_session):
     payload = {
         "type": "xtimes",
-        "max_redemptions": 5,
+        "uses_left": 5,
         "expires": "true",
         "expiry_time": "2025-12-31T23:59:59"
     }
@@ -67,7 +80,7 @@ def test_create_voucher_invalid_data(db_session):
     payload = {
         "code": "INVALID123",
         "type": "xtimes",
-        "max_redemptions": "five",
+        "uses_left": "five",
         "expires": "true",
         "expiry_time": "2025-12-31T23:59:59"
     }
@@ -79,7 +92,7 @@ def test_create_voucher_duplicate_code(db_session):
     payload = {
         "code": "DUPLICATE123",
         "type": "xtimes",
-        "max_redemptions": 5,
+        "uses_left": 5,
         "expires": "true",
         "expiry_time": "2025-12-31T23:59:59"
     }
@@ -97,7 +110,7 @@ def test_get_existing_voucher(db_session):
     payload = {
         "code": "EXISTING123",
         "type": "xtimes",
-        "max_redemptions": 5,
+        "uses_left": 5,
         "expires": "true",
         "expiry_time": "2025-12-31T23:59:59"
     }
@@ -118,7 +131,7 @@ def test_delete_existing_voucher(db_session):
     payload = {
         "code": "DELETE123",
         "type": "xtimes",
-        "max_redemptions": 5,
+        "uses_left": 5,
         "expires": "true",
         "expiry_time": "2025-12-31T23:59:59"
     }
@@ -139,7 +152,7 @@ def test_redeem_voucher_success(db_session):
     payload = {
         "code": "REDEEM123",
         "type": "xtimes",
-        "max_redemptions": 5,
+        "uses_left": 5,
         "expires": "true",
         "expiry_time": "2025-12-31T23:59:59"
     }
@@ -154,22 +167,48 @@ def test_redeem_voucher_success(db_session):
 
 
 def test_redeem_voucher_exceed_limit(db_session):
+    number_of_redeems = 3
     payload = {
         "code": "LIMIT123",
         "type": "xtimes",
-        "max_redemptions": 1,
+        "uses_left": number_of_redeems,
         "expires": "true",
         "expiry_time": "2025-12-31T23:59:59"
     }
+
     # Create the voucher
     response = client.post("/voucher/", json=payload)
     assert response.status_code == 200
-    # Redeem the voucher once
-    redeem_payload = {"code": payload["code"]}
-    response = client.post("/redeem/", json=redeem_payload)
-    assert response.status_code == 200
-    # Attempt to redeem the voucher again
+
+    for _ in range(number_of_redeems):
+        # Redeem the voucher once
+        redeem_payload = {"code": payload["code"]}
+        response = client.post("/redeem/", json=redeem_payload)
+
     response = client.post("/redeem/", json=redeem_payload)
     assert response.status_code == 400
     assert "Voucher has been redeemed the maximum number of times" in response.json()[
         "detail"]
+
+
+def test_redeem_multiple_times(db_session):
+    number_of_redeems = 3
+    payload = {
+        "code": "MULTIPLE123",
+        "type": "multiple",
+        "uses_left": number_of_redeems,
+        "expires": "true",
+        "expiry_time": "2025-12-31T23:59:59"
+    }
+
+    # Create the voucher
+    response = client.post("/voucher/", json=payload)
+    assert response.status_code == 200
+
+    for _ in range(number_of_redeems):
+        # Redeem the voucher once
+        redeem_payload = {"code": payload["code"]}
+        response = client.post("/redeem/", json=redeem_payload)
+
+    response = client.post("/redeem/", json=redeem_payload)
+    assert response.status_code == 200

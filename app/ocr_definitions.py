@@ -15,7 +15,6 @@ class Voucher(BaseClass):
     id = Column(Integer, primary_key=True, index=True)
     code = Column(String, unique=True, index=True)
     type = Column(String)
-    max_redemptions = Column(Integer)
-    redeemed_count = Column(Integer, default=0)
+    uses_left = Column(Integer)
     expires = Column(Boolean, default=False)
     expiry_time = Column(DateTime, nullable=True)

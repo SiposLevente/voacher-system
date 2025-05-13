@@ -32,7 +32,7 @@ def create_voucher(voucher: VoucherCreate, db: Session = Depends(get_db)):
     db_voucher = Voucher(
         code=voucher.code,
         type=voucher.type,  # using the enum type (SINGLE, MULTIPLE, X_TIMES)
-        max_redemptions=voucher.max_redemptions,
+        uses_left=voucher.uses_left,
         expires=voucher.expires,
         expiry_time=voucher.expiry_time
     )
@@ -41,9 +41,12 @@ def create_voucher(voucher: VoucherCreate, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=400, detail=f"Invalid voucher type. Allowed values are: {', '.join(VOUCHER_TYPES.keys())}")
 
-    if voucher.type == "xtimes" and voucher.max_redemptions < 1:
+    if voucher.type == "single":
+        db_voucher.uses_left = 1
+
+    if voucher.type == "xtimes" and voucher.uses_left < 2:
         raise HTTPException(
-            status_code=400, detail="max_redemptions must be greater than 0 for xtimes voucher")
+            status_code=400, detail="uses_left must be greater than 2 for xtimes voucher")
 
     db.add(db_voucher)
     try:
@@ -102,10 +105,10 @@ def redeem_voucher(voucher: VoucherRedemption, db: Session = Depends(get_db)):
             raise HTTPException(status_code=400, detail="Voucher has expired")
 
     if db_voucher.type != "multiple":
-        if db_voucher.redeemed_count >= db_voucher.max_redemptions:
+        if 1 > db_voucher.uses_left:
             raise HTTPException(
                 status_code=400, detail="Voucher has been redeemed the maximum number of times")
 
-    db_voucher.redeemed_count += 1
+    db_voucher.uses_left -= 1
     db.commit()
     return {"message": "Voucher redeemed successfully"}
