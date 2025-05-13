@@ -37,17 +37,6 @@ def create_voucher(voucher: VoucherCreate, db: Session = Depends(get_db)):
         expiry_time=voucher.expiry_time
     )
 
-    if voucher.type not in VOUCHER_TYPES:
-        raise HTTPException(
-            status_code=400, detail=f"Invalid voucher type. Allowed values are: {', '.join(VOUCHER_TYPES.keys())}")
-
-    if voucher.type == "single":
-        db_voucher.uses_left = 1
-
-    if voucher.type == "xtimes" and voucher.uses_left < 2:
-        raise HTTPException(
-            status_code=400, detail="uses_left must be greater than 2 for xtimes voucher")
-
     db.add(db_voucher)
     try:
         db.commit()
