@@ -1,5 +1,5 @@
 from datetime import datetime
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Query
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from app.models import VoucherCreate, VoucherGet, VoucherRedemption
@@ -39,12 +39,9 @@ def create_voucher(voucher: VoucherCreate, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=400, detail=f"Invalid voucher type. Allowed values are: {', '.join(VOUCHER_TYPES.keys())}")
 
-    if voucher.expires and voucher.expiry_time is None:
+    if voucher.type == "xtimes" and voucher.max_redemptions < 1:
         raise HTTPException(
-            status_code=400, detail="Voucher expiry time is not set")
-
-    if not voucher.expires and voucher.expiry_time is not None:
-        voucher.expiry_time = None
+            status_code=400, detail="max_redemptions must be greater than 0 for xtimes voucher")
 
     db.add(db_voucher)
     try:
@@ -69,8 +66,8 @@ def get_vouchers(db: Session = Depends(get_db)):
 
 # Admin: Get a specific voucher by code
 @appAPI.get("/voucher/")
-def get_voucher_by_code(voucher: VoucherGet, db: Session = Depends(get_db)):
-    db_voucher = db.query(Voucher).filter(Voucher.code == voucher.code).first()
+def get_voucher_by_code(code: str = Query(..., description="The code of the voucher to retrieve"), db: Session = Depends(get_db)):
+    db_voucher = db.query(Voucher).filter(Voucher.code == code).first()
 
     if db_voucher is None:
         raise HTTPException(status_code=404, detail="Voucher not found")
