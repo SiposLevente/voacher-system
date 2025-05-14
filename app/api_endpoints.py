@@ -4,7 +4,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from app.models import VoucherCreate,  VoucherRedemption
-from app.voucher_models import Voucher, BaseClass
+from app.schema import Voucher, BaseClass
 from sqlalchemy.exc import IntegrityError
 
 DATABASE_URL = os.getenv(

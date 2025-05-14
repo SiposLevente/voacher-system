@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, field_validator
 
-from app.voucher_models import VOUCHER_TYPES
+from app.schema import VOUCHER_TYPES
 
 
 class VoucherCreate(BaseModel):

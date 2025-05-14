@@ -3,7 +3,7 @@ import os
 os.environ["DATABASE_URL"] = "sqlite:///./_test_database.db"  # noqa
 
 import pytest
-from app.voucher_models import Voucher
+from app.schema import Voucher
 from fastapi.testclient import TestClient
 from app.api_endpoints import appAPI, SessionLocal, engine
 
