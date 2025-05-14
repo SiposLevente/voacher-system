@@ -68,9 +68,12 @@ This will start the FastAPI application on http://127.0.0.1:8000.
     }
     ```
   - **400 Bad Request**:
-    - If the voucher type is invalid.
-    - If `uses_left` is less than 2 for an "xtimes" voucher.
     - If the voucher code already exists.
+
+  - **422 Unprocessable Entity**
+    - If the voucher type is invalid.
+    - If `uses_left` is less invalid value.
+    - If Expiration time is configured incorrectly
 
 - **Example Request**:
   ```json

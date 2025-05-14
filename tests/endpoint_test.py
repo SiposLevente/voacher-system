@@ -1,9 +1,9 @@
 from datetime import datetime
 import os
-os.environ["DATABASE_URL"] = "sqlite:///./test_database.db"  # noqa
+os.environ["DATABASE_URL"] = "sqlite:///./_test_database.db"  # noqa
 
 import pytest
-from app.ocr_definitions import Voucher
+from app.voucher_models import Voucher
 from fastapi.testclient import TestClient
 from app.api_endpoints import appAPI, SessionLocal, engine
 
@@ -26,8 +26,8 @@ def cleanup_db():
     yield
     try:
         engine.dispose()
-        if os.path.exists("./test_database.db"):
-            os.remove("./test_database.db")
+        if os.path.exists("./_test_database.db"):
+            os.remove("./_test_database.db")
     except Exception as e:
         print(f"Error deleting the database: {e}")
 

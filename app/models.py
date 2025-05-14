@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, field_validator
 
-from app.ocr_definitions import VOUCHER_TYPES
+from app.voucher_models import VOUCHER_TYPES
 
 
 class VoucherCreate(BaseModel):
@@ -44,8 +44,4 @@ class VoucherCreate(BaseModel):
 
 
 class VoucherRedemption(BaseModel):
-    code: str
-
-
-class VoucherGet(BaseModel):
     code: str
