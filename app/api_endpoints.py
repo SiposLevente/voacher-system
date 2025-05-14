@@ -97,6 +97,7 @@ def redeem_voucher(voucher: VoucherRedemption, db: Session = Depends(get_db)):
             raise HTTPException(
                 status_code=400, detail="Voucher has been redeemed the maximum number of times")
 
-    db_voucher.uses_left -= 1
+        db_voucher.uses_left -= 1
+
     db.commit()
     return {"message": "Voucher redeemed successfully"}
